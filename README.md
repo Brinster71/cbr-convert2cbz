@@ -7,7 +7,7 @@ A small Flask app that lets you browse folders, select `.cbr` files, and convert
 - Browser-based folder navigation
 - Select one or more `.cbr` files in a folder
 - Convert to `.cbz` in-place
-- Uses `7z` if available, otherwise falls back to Python `rarfile`
+- Tries `7z`, then `zipfile`, then `rarfile` to handle mixed/mislabeled `.cbr` archives
 
 ## Quick start (Linux/macOS)
 

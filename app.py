@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
@@ -43,6 +44,63 @@ def _list_directory(path: Path) -> tuple[list[Path], list[Path]]:
     return dirs, cbr_files
 
 
+def _extract_with_7z(source: Path, destination: Path) -> str | None:
+    extractor = shutil.which("7z") or shutil.which("7za")
+    if not extractor:
+        return "7z/7za not installed"
+
+    result = subprocess.run(
+        [extractor, "x", str(source), f"-o{destination}", "-y"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return None
+
+    return result.stderr.strip() or result.stdout.strip() or "Unknown 7z extraction error"
+
+
+def _extract_with_zipfile(source: Path, destination: Path) -> str | None:
+    try:
+        with zipfile.ZipFile(source) as archive:
+            archive.extractall(path=destination)
+        return None
+    except zipfile.BadZipFile:
+        return "Not a ZIP-compatible archive"
+
+
+def _extract_with_rarfile(source: Path, destination: Path) -> str | None:
+    try:
+        import rarfile
+    except ImportError:
+        return "rarfile module not installed"
+
+    try:
+        with rarfile.RarFile(source) as archive:
+            archive.extractall(path=destination)
+        return None
+    except rarfile.Error as exc:
+        return str(exc)
+
+
+def _extract_archive(source: Path, destination: Path) -> None:
+    """Extract CBR archive with multiple strategies to handle mislabeled files."""
+    errors: list[str] = []
+
+    for label, method in (
+        ("7z", _extract_with_7z),
+        ("zipfile", _extract_with_zipfile),
+        ("rarfile", _extract_with_rarfile),
+    ):
+        error = method(source, destination)
+        if error is None:
+            return
+        errors.append(f"{label}: {error}")
+
+    details = " | ".join(errors)
+    raise ConversionError(f"Failed to extract {source.name}. Tried: {details}")
+
+
 def convert_cbr_to_cbz(source: Path) -> Path:
     """Convert a .cbr file into a .cbz file in the same directory."""
     if source.suffix.lower() != ".cbr":
@@ -53,39 +111,15 @@ def convert_cbr_to_cbz(source: Path) -> Path:
 
     with tempfile.TemporaryDirectory(prefix="cbr_extract_") as tmpdir:
         tmp_path = Path(tmpdir)
+        _extract_archive(source, tmp_path)
 
-        extractor = shutil.which("7z") or shutil.which("7za")
-        if extractor:
-            import subprocess
-
-            result = subprocess.run(
-                [extractor, "x", str(source), f"-o{tmp_path}", "-y"],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0:
-                raise ConversionError(
-                    f"Failed to extract {source.name} with 7-Zip: {result.stderr.strip() or result.stdout.strip()}"
-                )
-        else:
-            try:
-                import rarfile
-            except ImportError as exc:
-                raise ConversionError(
-                    "No extractor available. Install 7z (preferred) or install the 'rarfile' Python package."
-                ) from exc
-
-            try:
-                with rarfile.RarFile(source) as archive:
-                    archive.extractall(path=tmp_path)
-            except rarfile.Error as exc:
-                raise ConversionError(f"Failed to read {source.name}: {exc}") from exc
+        extracted_files = [path for path in sorted(tmp_path.rglob("*")) if path.is_file()]
+        if not extracted_files:
+            raise ConversionError(f"Extraction succeeded but no files were found in {source.name}")
 
         with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in sorted(tmp_path.rglob("*")):
-                if file_path.is_file():
-                    arcname = file_path.relative_to(tmp_path)
-                    zipf.write(file_path, arcname)
+            for file_path in extracted_files:
+                zipf.write(file_path, file_path.relative_to(tmp_path))
 
     return target
 
@@ -138,19 +172,29 @@ def convert():
         return redirect(url_for("index", path=current, error="Please select at least one .cbr file."))
 
     converted: list[str] = []
-    try:
-        for name in selected_files:
+    failed: list[str] = []
+
+    for name in selected_files:
+        try:
             source = (current / name).resolve()
             source.relative_to(current)
             if not source.exists() or not source.is_file():
                 raise ConversionError(f"File not found: {name}")
             target = convert_cbr_to_cbz(source)
             converted.append(target.name)
-    except (ConversionError, ValueError) as exc:
-        return redirect(url_for("index", path=current, error=str(exc)))
+        except (ConversionError, ValueError) as exc:
+            failed.append(f"{name} ({exc})")
 
-    message = f"Converted {len(converted)} file(s): {', '.join(converted)}"
-    return redirect(url_for("index", path=current, success=message))
+    if converted and not failed:
+        message = f"Converted {len(converted)} file(s): {', '.join(converted)}"
+        return redirect(url_for("index", path=current, success=message))
+
+    if converted and failed:
+        success_message = f"Converted {len(converted)} file(s): {', '.join(converted)}"
+        error_message = f"Failed {len(failed)} file(s): {'; '.join(failed)}"
+        return redirect(url_for("index", path=current, success=success_message, error=error_message))
+
+    return redirect(url_for("index", path=current, error=f"Failed {len(failed)} file(s): {'; '.join(failed)}"))
 
 
 if __name__ == "__main__":
