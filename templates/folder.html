@@ -34,11 +34,17 @@
             <input type="hidden" name="current_dir" value="{{ current }}">
 
             {% if cbr_files %}
+                <div class="select-all-row">
+                    <label>
+                        <input type="checkbox" id="select-all-files">
+                        Select all files
+                    </label>
+                </div>
                 <ul class="list check-list">
                     {% for file in cbr_files %}
                         <li>
                             <label>
-                                <input type="checkbox" name="selected_files" value="{{ file.name }}">
+                                <input type="checkbox" name="selected_files" value="{{ file.name }}" class="file-checkbox">
                                 {{ file.name }}
                             </label>
                         </li>
@@ -51,5 +57,24 @@
         </form>
     </section>
 </main>
+
+<script>
+  const selectAll = document.getElementById('select-all-files');
+  const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+
+  if (selectAll) {
+    selectAll.addEventListener('change', () => {
+      fileCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectAll.checked;
+      });
+    });
+
+    fileCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        selectAll.checked = Array.from(fileCheckboxes).every((item) => item.checked);
+      });
+    });
+  }
+</script>
 </body>
 </html>

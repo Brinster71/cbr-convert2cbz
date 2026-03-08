@@ -115,3 +115,7 @@ button:hover,
   background: #7f1d1d;
   border: 1px solid #991b1b;
 }
+
+.select-all-row {
+  margin-bottom: 0.7rem;
+}
