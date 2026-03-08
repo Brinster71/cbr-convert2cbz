@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #111827;
+  color: #f3f4f6;
+}
+
+.container {
+  max-width: 920px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+h1 {
+  margin-bottom: 0.3rem;
+}
+
+.hint {
+  margin-top: 0;
+  color: #cbd5e1;
+}
+
+.panel {
+  background: #1f2937;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.small {
+  font-size: 0.88rem;
+  color: #93c5fd;
+}
+
+.list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.list li {
+  margin: 0.45rem 0;
+}
+
+a {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.links {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.path-form {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+input[type="text"] {
+  min-width: 320px;
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f3f4f6;
+  padding: 0.55rem 0.7rem;
+}
+
+.button,
+button {
+  display: inline-block;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+button:hover,
+.button:hover {
+  background: #1d4ed8;
+  text-decoration: none;
+}
+
+.alert {
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 0.8rem 0;
+}
+
+.success {
+  background: #14532d;
+  border: 1px solid #166534;
+}
+
+.error {
+  background: #7f1d1d;
+  border: 1px solid #991b1b;
+}
