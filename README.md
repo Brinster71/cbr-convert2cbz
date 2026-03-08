@@ -9,29 +9,38 @@ A small Flask app that lets you browse folders, select `.cbr` files, and convert
 - Convert to `.cbz` in-place
 - Uses `7z` if available, otherwise falls back to Python `rarfile`
 
-## Setup
+## Quick start (Linux/macOS)
+
+From the project root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-```
-
-## Run
-
-```bash
 python app.py
 ```
 
 Then open <http://localhost:8000>.
 
-## Notes
+## Why you don't see a `venv` folder
 
-- The UI is restricted to `BROWSER_ROOT` (defaults to your home directory).
-- You can change root with:
+This project uses `.venv` (with a leading dot), not `venv`.
+
+- The command `python3 -m venv .venv` **creates** that folder for you.
+- Because it starts with a dot, it is hidden in normal `ls` output.
+- Use `ls -la` to see it.
+
+## Troubleshooting
+
+- If `python3 -m venv .venv` fails, install your OS `venv` package first.
+  - Debian/Ubuntu example: `sudo apt install python3-venv`
+- If conversion fails for some `.cbr` files, install `7z` (`p7zip`) with your package manager.
+
+## Optional configuration
+
+The UI is restricted to `BROWSER_ROOT` (defaults to your home directory).
 
 ```bash
 BROWSER_ROOT=/path/to/comics python app.py
 ```
-
-- `7z` is preferred for extraction. Install it with your package manager if conversions fail.
