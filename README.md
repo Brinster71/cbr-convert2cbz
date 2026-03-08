@@ -23,6 +23,26 @@ python app.py
 
 Then open <http://localhost:8000>.
 
+## Quick start (Windows PowerShell)
+
+From the project root:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python app.py
+```
+
+Then open <http://localhost:8000>.
+
+If PowerShell blocks activation scripts, run this once in PowerShell and retry:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
 ## Why you don't see a `venv` folder
 
 This project uses `.venv` (with a leading dot), not `venv`.
