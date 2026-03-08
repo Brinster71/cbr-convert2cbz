@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>File Convert - CBR to CBZ Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="container">
+    <h1>Single File Conversion</h1>
+    <p class="hint">Convert one file from <code>.cbr</code> to <code>.cbz</code>.</p>
+
+    {% if success %}
+        <div class="alert success">{{ success }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel">
+        <h2>Selected file</h2>
+        <p class="path">{{ file_path }}</p>
+        <p class="small">Root: {{ browser_root }}</p>
+        <div class="links">
+            <a class="button" href="{{ url_for('browse', path=file_path.parent) }}">⬅ Back to entries</a>
+            <a class="button" href="{{ url_for('home') }}">🏠 Start page</a>
+        </div>
+    </section>
+
+    <section class="panel">
+        <form action="{{ url_for('convert_file') }}" method="post">
+            <input type="hidden" name="file_path" value="{{ file_path }}">
+            <button type="submit">Convert this file to .cbz</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

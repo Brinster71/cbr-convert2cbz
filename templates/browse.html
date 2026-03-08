@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Browse Path - CBR to CBZ Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="container">
+    <h1>Browse Path</h1>
+    <p class="hint">Click a folder for multi-file conversion, or a file for single-file conversion.</p>
+
+    {% if error %}
+        <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel">
+        <h2>Current path</h2>
+        <p class="path">{{ current }}</p>
+        <div class="links">
+            <a class="button" href="{{ url_for('home') }}">🏠 Start page</a>
+            {% if parent %}
+                <a class="button" href="{{ url_for('browse', path=parent) }}">⬆ Parent</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Entries</h2>
+        {% if entries %}
+            <ul class="list">
+                {% for entry in entries %}
+                    <li>
+                        {% if entry.is_dir() %}
+                            📁 <a href="{{ url_for('folder_view', path=entry) }}">{{ entry.name }}</a>
+                            <span class="small">(folder)</span>
+                        {% else %}
+                            📄 <a href="{{ url_for('file_view', path=entry) }}">{{ entry.name }}</a>
+                            <span class="small">(file)</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No files or folders in this directory.</p>
+        {% endif %}
+    </section>
+</main>
+</body>
+</html>

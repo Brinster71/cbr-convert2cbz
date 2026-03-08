@@ -1,12 +1,13 @@
 # CBR to CBZ Web Converter
 
-A small Flask app that lets you browse folders, select `.cbr` files, and convert them to `.cbz`.
+A small Flask app with a start page, path browser, single-file converter, and folder-based batch converter for `.cbr` to `.cbz`.
 
 ## Features
 
-- Browser-based folder navigation
-- Select one or more `.cbr` files in a folder
-- Convert to `.cbz` in-place
+- Start page with optional path input (blank starts at configured root)
+- Path browser that lists both files and folders
+- File click opens single-file converter page
+- Folder click opens batch conversion page
 - Tries `7z`, then `zipfile`, then `rarfile` to handle mixed/mislabeled `.cbr` archives
 
 ## Quick start (Linux/macOS)

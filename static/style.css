@@ -59,6 +59,28 @@ a:hover {
   text-decoration: underline;
 }
 
+.links {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.path-form {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+input[type="text"] {
+  min-width: 320px;
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f3f4f6;
+  padding: 0.55rem 0.7rem;
+}
+
 .button,
 button {
   display: inline-block;

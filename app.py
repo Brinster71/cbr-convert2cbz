@@ -26,22 +26,9 @@ def _safe_path(user_path: str | None) -> Path:
     candidate = Path(user_path).expanduser().resolve()
     try:
         candidate.relative_to(BROWSER_ROOT)
-    except ValueError as exc:  # pragma: no cover - tiny guard clause
+    except ValueError as exc:
         raise ConversionError("Requested path is outside of the allowed browser root.") from exc
     return candidate
-
-
-def _list_directory(path: Path) -> tuple[list[Path], list[Path]]:
-    dirs: list[Path] = []
-    cbr_files: list[Path] = []
-
-    for entry in sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
-        if entry.is_dir():
-            dirs.append(entry)
-        elif entry.is_file() and entry.suffix.lower() == ".cbr":
-            cbr_files.append(entry)
-
-    return dirs, cbr_files
 
 
 def _extract_with_7z(source: Path, destination: Path) -> str | None:
@@ -84,9 +71,7 @@ def _extract_with_rarfile(source: Path, destination: Path) -> str | None:
 
 
 def _extract_archive(source: Path, destination: Path) -> None:
-    """Extract CBR archive with multiple strategies to handle mislabeled files."""
     errors: list[str] = []
-
     for label, method in (
         ("7z", _extract_with_7z),
         ("zipfile", _extract_with_zipfile),
@@ -97,12 +82,18 @@ def _extract_archive(source: Path, destination: Path) -> None:
             return
         errors.append(f"{label}: {error}")
 
-    details = " | ".join(errors)
-    raise ConversionError(f"Failed to extract {source.name}. Tried: {details}")
+    raise ConversionError(f"Failed to extract {source.name}. Tried: {' | '.join(errors)}")
+
+
+def _list_entries(path: Path) -> list[Path]:
+    return sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+
+
+def _list_cbr_files(path: Path) -> list[Path]:
+    return [entry for entry in _list_entries(path) if entry.is_file() and entry.suffix.lower() == ".cbr"]
 
 
 def convert_cbr_to_cbz(source: Path) -> Path:
-    """Convert a .cbr file into a .cbz file in the same directory."""
     if source.suffix.lower() != ".cbr":
         raise ConversionError(f"Unsupported file type: {source.name}")
 
@@ -125,21 +116,30 @@ def convert_cbr_to_cbz(source: Path) -> Path:
 
 
 @app.get("/")
-def index():
-    error = request.args.get("error")
-    success = request.args.get("success")
+def home():
+    return render_template("home.html", browser_root=BROWSER_ROOT, error=request.args.get("error"))
+
+
+@app.get("/browse")
+def browse():
     requested_path = request.args.get("path")
+    error = request.args.get("error")
 
     try:
         current = _safe_path(requested_path)
     except ConversionError as exc:
-        return redirect(url_for("index", error=str(exc)))
+        return redirect(url_for("home", error=str(exc)))
 
-    if not current.exists() or not current.is_dir():
-        return redirect(url_for("index", error="The requested directory does not exist."))
+    if not current.exists():
+        return redirect(url_for("home", error="The requested path does not exist."))
 
-    dirs, cbr_files = _list_directory(current)
+    if current.is_file():
+        return redirect(url_for("file_view", path=current))
 
+    if not current.is_dir():
+        return redirect(url_for("home", error="The requested path is not a regular file or directory."))
+
+    entries = _list_entries(current)
     parent = None
     if current != BROWSER_ROOT:
         parent_candidate = current.parent
@@ -147,29 +147,72 @@ def index():
             parent = parent_candidate
 
     return render_template(
-        "index.html",
+        "browse.html",
         browser_root=BROWSER_ROOT,
         current=current,
         parent=parent,
-        directories=dirs,
-        cbr_files=cbr_files,
-        success=success,
+        entries=entries,
         error=error,
     )
 
 
-@app.post("/convert")
-def convert():
+@app.get("/folder")
+def folder_view():
+    requested_path = request.args.get("path")
+
+    try:
+        current = _safe_path(requested_path)
+    except ConversionError as exc:
+        return redirect(url_for("home", error=str(exc)))
+
+    if not current.exists() or not current.is_dir():
+        return redirect(url_for("home", error="Folder does not exist."))
+
+    cbr_files = _list_cbr_files(current)
+
+    return render_template(
+        "folder.html",
+        browser_root=BROWSER_ROOT,
+        current=current,
+        cbr_files=cbr_files,
+        success=request.args.get("success"),
+        error=request.args.get("error"),
+    )
+
+
+@app.get("/file")
+def file_view():
+    requested_path = request.args.get("path")
+
+    try:
+        file_path = _safe_path(requested_path)
+    except ConversionError as exc:
+        return redirect(url_for("home", error=str(exc)))
+
+    if not file_path.exists() or not file_path.is_file():
+        return redirect(url_for("home", error="File does not exist."))
+
+    return render_template(
+        "file.html",
+        browser_root=BROWSER_ROOT,
+        file_path=file_path,
+        success=request.args.get("success"),
+        error=request.args.get("error"),
+    )
+
+
+@app.post("/convert-folder")
+def convert_folder():
     current_dir = request.form.get("current_dir", "")
     selected_files = request.form.getlist("selected_files")
 
     try:
         current = _safe_path(current_dir)
     except ConversionError as exc:
-        return redirect(url_for("index", error=str(exc)))
+        return redirect(url_for("home", error=str(exc)))
 
     if not selected_files:
-        return redirect(url_for("index", path=current, error="Please select at least one .cbr file."))
+        return redirect(url_for("folder_view", path=current, error="Please select at least one .cbr file."))
 
     converted: list[str] = []
     failed: list[str] = []
@@ -186,15 +229,38 @@ def convert():
             failed.append(f"{name} ({exc})")
 
     if converted and not failed:
-        message = f"Converted {len(converted)} file(s): {', '.join(converted)}"
-        return redirect(url_for("index", path=current, success=message))
+        return redirect(url_for("folder_view", path=current, success=f"Converted {len(converted)} file(s): {', '.join(converted)}"))
 
     if converted and failed:
-        success_message = f"Converted {len(converted)} file(s): {', '.join(converted)}"
-        error_message = f"Failed {len(failed)} file(s): {'; '.join(failed)}"
-        return redirect(url_for("index", path=current, success=success_message, error=error_message))
+        return redirect(
+            url_for(
+                "folder_view",
+                path=current,
+                success=f"Converted {len(converted)} file(s): {', '.join(converted)}",
+                error=f"Failed {len(failed)} file(s): {'; '.join(failed)}",
+            )
+        )
 
-    return redirect(url_for("index", path=current, error=f"Failed {len(failed)} file(s): {'; '.join(failed)}"))
+    return redirect(url_for("folder_view", path=current, error=f"Failed {len(failed)} file(s): {'; '.join(failed)}"))
+
+
+@app.post("/convert-file")
+def convert_file():
+    raw_path = request.form.get("file_path", "")
+
+    try:
+        file_path = _safe_path(raw_path)
+    except ConversionError as exc:
+        return redirect(url_for("home", error=str(exc)))
+
+    if not file_path.exists() or not file_path.is_file():
+        return redirect(url_for("home", error="File does not exist."))
+
+    try:
+        target = convert_cbr_to_cbz(file_path)
+        return redirect(url_for("file_view", path=file_path, success=f"Converted to {target.name}"))
+    except ConversionError as exc:
+        return redirect(url_for("file_view", path=file_path, error=str(exc)))
 
 
 if __name__ == "__main__":
