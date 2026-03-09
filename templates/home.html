@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CBR to CBZ Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="container">
+    <h1>CBR to CBZ Converter</h1>
+    <p class="hint">Enter a path to browse. Leave blank to start at your configured root.</p>
+
+    {% if error %}
+        <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel">
+        <h2>Start browsing</h2>
+        <p class="small">Root: {{ browser_root }}</p>
+        <form action="{{ url_for('browse') }}" method="get" class="path-form">
+            <input type="text" name="path" placeholder="/path/to/comics (optional)">
+            <button type="submit">Browse</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Folder Convert - CBR to CBZ Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="container">
+    <h1>Folder Conversion</h1>
+    <p class="hint">Select one or more <code>.cbr</code> files in this folder.</p>
+
+    {% if success %}
+        <div class="alert success">{{ success }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel">
+        <h2>Folder</h2>
+        <p class="path">{{ current }}</p>
+        <div class="links">
+            <a class="button" href="{{ url_for('browse', path=current) }}">⬅ Back to entries</a>
+            <a class="button" href="{{ url_for('home') }}">🏠 Start page</a>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>CBR files</h2>
+        <form action="{{ url_for('convert_folder') }}" method="post">
+            <input type="hidden" name="current_dir" value="{{ current }}">
+
+            {% if cbr_files %}
+                <div class="select-all-row">
+                    <label>
+                        <input type="checkbox" id="select-all-files">
+                        Select all files
+                    </label>
+                </div>
+                <ul class="list check-list">
+                    {% for file in cbr_files %}
+                        <li>
+                            <label>
+                                <input type="checkbox" name="selected_files" value="{{ file.name }}" class="file-checkbox">
+                                {{ file.name }}
+                            </label>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <button type="submit">Convert selected to .cbz</button>
+            {% else %}
+                <p>No <code>.cbr</code> files found in this folder.</p>
+            {% endif %}
+        </form>
+    </section>
+</main>
+
+<script>
+  const selectAll = document.getElementById('select-all-files');
+  const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+
+  if (selectAll) {
+    selectAll.addEventListener('change', () => {
+      fileCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectAll.checked;
+      });
+    });
+
+    fileCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        selectAll.checked = Array.from(fileCheckboxes).every((item) => item.checked);
+      });
+    });
+  }
+</script>
+</body>
+</html>
