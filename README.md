@@ -9,6 +9,7 @@ A small Flask app with a start page, path browser, single-file converter, and fo
 - File click opens single-file converter page
 - Folder click opens batch conversion page
 - Tries `7z`, then `zipfile`, then `rarfile` to handle mixed/mislabeled `.cbr` archives
+- If a same-name sidecar XML exists (for example `MyBook.xml`), it is embedded into the output CBZ as `ComicInfo.xml`
 
 ## Quick start (Linux/macOS)
 

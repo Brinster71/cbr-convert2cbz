@@ -93,12 +93,20 @@ def _list_cbr_files(path: Path) -> list[Path]:
     return [entry for entry in _list_entries(path) if entry.is_file() and entry.suffix.lower() == ".cbr"]
 
 
+def _read_sidecar_xml(source: Path) -> str | None:
+    sidecar = source.with_suffix(".xml")
+    if not sidecar.exists() or not sidecar.is_file():
+        return None
+    return sidecar.read_text(encoding="utf-8")
+
+
 def convert_cbr_to_cbz(source: Path) -> Path:
     if source.suffix.lower() != ".cbr":
         raise ConversionError(f"Unsupported file type: {source.name}")
 
     source = source.resolve()
     target = source.with_suffix(".cbz")
+    sidecar_xml = _read_sidecar_xml(source)
 
     with tempfile.TemporaryDirectory(prefix="cbr_extract_") as tmpdir:
         tmp_path = Path(tmpdir)
@@ -108,9 +116,14 @@ def convert_cbr_to_cbz(source: Path) -> Path:
         if not extracted_files:
             raise ConversionError(f"Extraction succeeded but no files were found in {source.name}")
 
+        has_comic_info = any(path.relative_to(tmp_path).as_posix().lower() == "comicinfo.xml" for path in extracted_files)
+
         with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
             for file_path in extracted_files:
                 zipf.write(file_path, file_path.relative_to(tmp_path))
+
+            if sidecar_xml and not has_comic_info:
+                zipf.writestr("ComicInfo.xml", sidecar_xml)
 
     return target
 
